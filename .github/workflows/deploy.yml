@@ -1,44 +1,50 @@
 # Nama alur kerja
 name: Deploy to GitHub Pages
 
-# Pemicu
+# Pemicu: Alur kerja ini akan berjalan setiap kali ada 'push' ke branch 'main'
 on:
   push:
     branches:
       - main
 
-# Izin
+# Izin yang diperlukan agar alur kerja bisa menulis ke branch gh-pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Pengaturan
+# Pengaturan agar hanya ada satu proses deploy yang berjalan pada satu waktu
 concurrency:
   group: "pages"
   cancel-in-progress: true
 
-# Pekerjaan
+# Pekerjaan yang akan dilakukan
 jobs:
   build-and-deploy:
+    # Menjalankan di server Ubuntu terbaru
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      # Langkah 1: Mengambil kode dari repositori Anda
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Langkah 2: Menyiapkan lingkungan Node.js
       # PERBAIKAN: Menghapus 'cache: npm' untuk mengatasi error package-lock.json
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
+      # Langkah 3: Menginstal semua 'dependencies' dari package.json
       - name: Install dependencies
         run: npm install
 
+      # Langkah 4: Menjalankan proses 'build' untuk membuat file website
+      # Variabel VITE_* akan diambil dari Secrets
       - name: Build application
         run: npm run build
         env:
@@ -49,14 +55,18 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
+      # Langkah 5: Menyiapkan artefak untuk GitHub Pages
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # Langkah 6: Mengunggah artefak hasil build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          # Unggah dari folder 'dist' (hasil dari 'npm run build')
           path: './dist'
 
+      # Langkah 7: Melakukan deploy ke GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
