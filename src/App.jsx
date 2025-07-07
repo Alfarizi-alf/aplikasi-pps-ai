@@ -1,14 +1,14 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-// Pustaka Ikon
-import { UploadCloud, FileText, BrainCircuit, LoaderCircle, AlertTriangle, ChevronRight, CheckCircle, ArrowRight, Download, Lightbulb, Zap, XCircle } from 'lucide-react';
+// Pustaka Ikon (dengan nama yang sudah diperbaiki dari LoaderCircle menjadi Loader2)
+import { UploadCloud, FileText, BrainCircuit, Loader2, AlertTriangle, ChevronRight, CheckCircle, ArrowRight, Download, Lightbulb, Zap, XCircle } from 'lucide-react';
 
 // Impor modul Firebase
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 
-// --- Konfigurasi Firebase dari GitHub Secrets (Milik Pemilik Proyek) ---
+// --- Konfigurasi Firebase dari GitHub Secrets ---
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -55,26 +55,19 @@ const MessageModal = ({ message, type, onClose }) => {
 
 // Komponen Aplikasi Utama
 export default function App() {
-  // State untuk API Key Pengguna
   const [apiKey, setApiKey] = useState('');
   const [isApiKeyInvalid, setIsApiKeyInvalid] = useState(false);
-  
-  // State untuk Data dan Proses
   const [rawData, setRawData] = useState(null);
   const [groupedData, setGroupedData] = useState(null);
   const [fileName, setFileName] = useState('');
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [loadingStates, setLoadingStates] = useState({});
-  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0, message: '' });
-  const [modalMessage, setModalMessage] = useState({ message: '', type: '' });
   const [openStates, setOpenStates] = useState({});
-
-  // State Firebase
+  const [modalMessage, setModalMessage] = useState({ message: '', type: '' });
   const [db, setDb] = useState(null);
   const [userId, setUserId] = useState(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
-  // Inisialisasi Firebase
   useEffect(() => {
     try {
       if (!firebaseConfig.apiKey) {
@@ -86,7 +79,6 @@ export default function App() {
       const firestoreDb = getFirestore(app);
       const auth = getAuth(app);
       setDb(firestoreDb);
-
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           setUserId(user.uid);
@@ -106,7 +98,6 @@ export default function App() {
     }
   }, []);
 
-  // Fungsi untuk memproses file Excel
   const onDrop = useCallback(async (acceptedFiles) => {
     setRawData(null);
     setGroupedData(null);
@@ -119,7 +110,6 @@ export default function App() {
       return;
     }
     setFileName(file.name);
-
     try {
       await loadXlsxScript();
       const reader = new FileReader();
@@ -128,8 +118,6 @@ export default function App() {
           const workbook = window.XLSX.read(event.target.result, { type: 'binary' });
           const sheetName = workbook.SheetNames[0];
           const jsonData = window.XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: "" });
-          setRawData(jsonData);
-          // Proses data setelah di-set
           const processed = processData(jsonData);
           setGroupedData(processed);
         } catch (e) {
@@ -147,7 +135,6 @@ export default function App() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } });
 
-  // Fungsi untuk memproses data mentah menjadi hierarki
   const processData = (data) => {
     const groups = {};
     data.forEach((row, index) => {
@@ -157,32 +144,21 @@ export default function App() {
       }, {});
       const codeKey = Object.keys(cleanedRow).find(k => k.includes('kode'));
       if (!codeKey || !cleanedRow[codeKey]) return;
-      
       const code = String(cleanedRow[codeKey]);
       const parts = code.split('.');
       if (parts.length < 4) return;
-      
-      const [bab, standar, kriteria, ...epParts] = parts;
-      const ep = epParts.join('.');
-
+      const [bab, standar, kriteria] = parts;
       if (!groups[bab]) groups[bab] = { title: `BAB ${bab}`, standards: {} };
       if (!groups[bab].standards[standar]) groups[bab].standards[standar] = { title: `Standar ${standar}`, criterias: {} };
       if (!groups[bab].standards[standar].criterias[kriteria]) {
         groups[bab].standards[standar].criterias[kriteria] = { title: `Kriteria ${kriteria}`, items: [] };
       }
-      
-      const itemData = {
-        id: `${code}-${index}`,
-        ...cleanedRow
-      };
-      groups[bab].standards[standar].criterias[kriteria].items.push(itemData);
+      groups[bab].standards[standar].criterias[kriteria].items.push({ id: `${code}-${index}`, ...cleanedRow });
     });
     return groups;
   };
 
   const toggleOpen = (id) => setOpenStates(prev => ({ ...prev, [id]: !prev[id] }));
-
-  // ... (Fungsi-fungsi lain seperti callAiApi, handleApiError, dll. bisa ditambahkan di sini)
 
   return (
     <div className="bg-slate-900 min-h-screen text-white font-sans p-4 sm:p-6 lg:p-8">
@@ -193,7 +169,6 @@ export default function App() {
           <p className="text-slate-400 mt-2">Unggah file, masukkan kunci API, biarkan AI membantu, lalu unduh hasilnya.</p>
         </header>
 
-        {/* Bagian Input Kunci API */}
         <div className="bg-slate-800 rounded-xl p-6 mb-8 shadow-lg">
            <label htmlFor="apiKey" className="block text-sm font-medium text-slate-300 mb-2">Kunci API Google AI Anda</label>
            <input
@@ -221,14 +196,13 @@ export default function App() {
            </div>
         </div>
 
-        {/* Bagian Upload File (Dropzone) */}
         {!groupedData && (
           <div {...getRootProps()} className={`w-full p-10 border-2 border-dashed rounded-xl transition-all duration-300 ${isProcessingFile ? 'cursor-wait bg-slate-800' : 'cursor-pointer hover:border-cyan-500 hover:bg-slate-800'} ${isDragActive ? 'border-cyan-400 bg-slate-700' : 'border-slate-600'}`}>
             <input {...getInputProps()} />
             <div className="flex flex-col items-center justify-center text-center">
               {isProcessingFile ? (
                 <>
-                  <LoaderCircle className="w-12 h-12 text-cyan-500 mb-4 animate-spin" />
+                  <Loader2 className="w-12 h-12 text-cyan-500 mb-4 animate-spin" />
                   <p className="text-lg font-semibold text-slate-300">Memproses file...</p>
                 </>
               ) : (
@@ -244,7 +218,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Bagian Tampilan Hasil */}
         {groupedData && (
           <div className="animate-fade-in space-y-2">
             <h2 className="text-2xl font-bold text-cyan-400 mb-4">Hasil Proses: {fileName}</h2>
@@ -256,7 +229,6 @@ export default function App() {
                 </div>
                 {openStates[bab.title] && (
                   <div className="p-4">
-                    {/* Di sini Anda bisa menambahkan logika untuk menampilkan standar, kriteria, dan item */}
                     <p className="text-slate-400">Detail untuk {bab.title} akan ditampilkan di sini.</p>
                   </div>
                 )}
