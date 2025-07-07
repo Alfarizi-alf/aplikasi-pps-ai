@@ -57,39 +57,28 @@ const MessageModal = ({ message, type, onClose }) => {
 // Komponen Aplikasi Utama
 export default function App() {
   // --- STATE APLIKASI ---
-  // Kunci API Gemini, dimasukkan oleh pengguna
   const [apiKey, setApiKey] = useState('');
   const [isApiKeyInvalid, setIsApiKeyInvalid] = useState(false);
-
-  // State untuk data dan proses
   const [rawData, setRawData] = useState(null);
   const [groupedData, setGroupedData] = useState(null);
   const [fileName, setFileName] = useState('');
   const [isProcessingFile, setIsProcessingFile] = useState(false);
-  
-  // State untuk UI
   const [loadingStates, setLoadingStates] = useState({});
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0, message: '' });
   const [modalMessage, setModalMessage] = useState({ message: '', type: '' });
   const [batchResult, setBatchResult] = useState(null);
   const [openStates, setOpenStates] = useState({});
-  
-  // State untuk hasil AI
   const [aiSummary, setAiSummary] = useState('');
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
-
-  // State Firebase
   const [db, setDb] = useState(null);
   const [userId, setUserId] = useState(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
-  // --- EFEK & INISIALISASI ---
-
-  // Inisialisasi Firebase saat aplikasi dimuat
+  // Inisialisasi Firebase
   useEffect(() => {
     try {
       if (!firebaseConfig.apiKey) {
-        console.error("Konfigurasi Firebase tidak ditemukan. Fitur penyimpanan data tidak akan berfungsi.");
+        console.error("Konfigurasi Firebase tidak ditemukan.");
         setIsAuthReady(true);
         return;
       }
@@ -117,7 +106,7 @@ export default function App() {
     }
   }, []);
 
-  // Simpan data ke Firestore setiap kali ada perubahan
+  // Simpan data ke Firestore
   const saveToFirestore = useCallback(async (dataToSave, currentFileName, currentUserId) => {
     if (!db || !currentUserId || !currentFileName) return;
     if (Object.keys(dataToSave).length === 0 && !aiSummary) return;
@@ -145,10 +134,7 @@ export default function App() {
     }
   }, [groupedData, aiSummary, userId, fileName, isAuthReady, saveToFirestore]);
 
-
-  // --- FUNGSI INTI ---
-
-  // Fungsi untuk memanggil Google AI API menggunakan kunci dari pengguna
+  // Fungsi pemanggilan AI
   const callAiApi = async (prompt) => {
     if (!apiKey) {
       setIsApiKeyInvalid(true);
@@ -178,7 +164,6 @@ export default function App() {
     return "Respons AI tidak valid.";
   };
 
-  // Fungsi untuk menangani error API
   const handleApiError = (e) => {
     let message;
     if (e.message === "API_KEY_INVALID") {
@@ -191,11 +176,10 @@ export default function App() {
     setModalMessage({ message, type: 'error' });
     console.error("Kesalahan API:", e);
   };
-  
-  // (Fungsi-fungsi lain seperti onDrop, processData, updateItemState, dll. tetap sama)
-  // ... [Sisa fungsi-fungsi yang tidak berubah bisa diletakkan di sini]
 
-  // --- RENDER KOMPONEN ---
+  // (Sisa fungsi-fungsi aplikasi seperti onDrop, processData, dll. tetap sama)
+  // ...
+
   return (
     <div className="bg-slate-900 min-h-screen text-white font-sans p-4 sm:p-6 lg:p-8">
       <MessageModal
@@ -203,7 +187,7 @@ export default function App() {
         type={modalMessage.type}
         onClose={() => setModalMessage({ message: '', type: '' })}
       />
-      {/* ... [Sisa komponen modal] ... */}
+      {/* ... Sisa komponen modal ... */}
 
       <div className="max-w-7xl mx-auto">
         <header className="text-center mb-8">
@@ -248,7 +232,7 @@ export default function App() {
         </div>
 
         {/* Sisa UI aplikasi (Dropzone, Tampilan Data, dll.) */}
-        {/* ... [Kode UI lainnya tetap sama] ... */}
+        {/* ... Kode UI lainnya tetap sama ... */}
       </div>
     </div>
   );
