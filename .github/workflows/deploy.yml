@@ -7,11 +7,26 @@ on:
     branches:
       - main
 
+# Izin yang diperlukan untuk metode deploy baru
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Pengaturan agar hanya ada satu proses deploy yang berjalan pada satu waktu
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 # Pekerjaan yang akan dilakukan
 jobs:
   build-and-deploy:
     # Menjalankan di server Ubuntu terbaru
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
     steps:
       # Langkah 1: Mengambil kode dari repositori Anda
       - name: Checkout code
@@ -38,10 +53,18 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
-      # Langkah 5: Melakukan deploy ke branch 'gh-pages'
-      # Tindakan ini akan secara otomatis membuat branch gh-pages untuk Anda.
-      - name: Deploy to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v3
+      # Langkah 5: Menyiapkan artefak untuk GitHub Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # Langkah 6: Mengunggah artefak hasil build
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          # Unggah dari folder 'dist' (hasil dari 'npm run build')
+          path: './dist'
+
+      # Langkah 7: Melakukan deploy ke GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
